@@ -37,11 +37,24 @@ def project(points, K, rvec, tvec, dist):
 
     # 1. World -> camera coordinates
     R = rodrigues(rvec)
-    X_cam = ... # TODO: FILL THIS
+
+    # The formula X_c = R * X_w + t transforms ONE point written as a column vector.
+    # Here, `points` stores one point per ROW (shape (N, 3)), so we use the transposed
+    # version of the formula: (R * X_w)^T = X_w^T * R^T. 
+    # This lets us rotate all N points with a single matrix product (points @ R.T), 
+    # and then add the translation t, reshaped from (3, 1) to (1, 3) so that NumPy broadcasting adds it to every row. 
+    # The result, X_cam, has shape (N, 3) and holds each point in the camera frame (origin at the
+    # camera centre, Z_c = depth along the optical axis).
+
+
+    # X_c = R * X_w + t   ==>    X_c(row) = X_w(row) * Rᵀ + tᵀ
+    # R.T is the transpose of the matrix
+    X_cam = points @ R.T + tvec.reshape(1,3)   # TODO: FILL THIS
 
     # 2. Perspective division -> normalized image plane (z = 1)
-    x = ... # TODO: FILL THIS
-    y = ... # TODO: FILL THIS
+    # x = Xc/Zc, y = Yc/Zc
+    x = X_cam[:, 0] / X_cam[:, 2]       # TODO: FILL THIS
+    y = X_cam[:, 1] / X_cam[:, 2]       # TODO: FILL THIS
 
     # 3. Lens distortion (radial k1, k2, k3 + tangential p1, p2)
     r2 = x**2 + y**2
@@ -49,9 +62,12 @@ def project(points, K, rvec, tvec, dist):
     x_d = x * radial + 2 * p1 * x * y + p2 * (r2 + 2 * x**2)
     y_d = y * radial + p1 * (r2 + 2 * y**2) + 2 * p2 * x * y
 
+
     # 4. Intrinsics: normalized -> pixel coordinates
-    u = ... # TODO: FILL THIS
-    v = ... # TODO: FILL THIS
+    # u = f_x * x_d + s * y_d + c_x * 1 
+    u = K[0, 0] * x_d + K[0, 1] * y_d + K[0, 2]  # TODO: FILL THIS K[0, 0] * x_d + K[0, 1] * y_d + K[0, 2] 
+    # v = 0 * x_d + f_y * y_d + c_y * 1
+    v = K[1, 0] * x_d + K[1, 1] * y_d + K[1, 2]  # TODO: FILL THIS K[1, 0] * x_d + K[1, 1] * y_d + K[1, 2]
 
     return np.stack([u, v], axis=1).reshape(-1, 1, 2)
 
@@ -150,7 +166,9 @@ def main():
             cv2.drawChessboardCorners(frame, (chessboard_rows, chessboard_cols), corners, ret)
 
             # Find the rotation and translation vectors.
-            ret, rvecs, tvecs = cv2.solvePnP(corners, board_points, mtx, None, flags=cv2.SOLVEPNP_IPPE_SQUARE)
+            # OLD LINE: ret, rvecs, tvecs = cv2.solvePnP(corners, board_points, mtx, None, flags=cv2.SOLVEPNP_IPPE_SQUARE)
+            ret, rvecs, tvecs = cv2.solvePnP(board_points, corners, mtx, dist)
+
 
             # project 3D points to image plane
             points = wave_sim.get_points()

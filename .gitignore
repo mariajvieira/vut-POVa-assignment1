@@ -7,5 +7,5 @@ __pycache__/
 .DS_Store
 .vscode/
 
-calibration.npz
-calibresult.png
+assignment/calibration.npz
+assignment/calibresult.png
