@@ -1,4 +1,4 @@
-## 1st Home Assignment
+## 1st Home Assignment: Grade 4/5
 
 This assignment will show you how to calibrate a projective camera, how to estimate the 3D position of known objects from their projections and how to render objects into a real scene (augmented reality).  When done, submit only the two *.py files into the information system.
 
